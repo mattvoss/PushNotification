@@ -72,7 +72,7 @@ public class GCMIntentService extends GCMBaseIntentService {
         PushPlugin.sendExtras(extras);
       } else {
         extras.putBoolean("foreground", false);
-
+        PushPlugin.sendExtras(extras);
         // Send a notification if there is a message
         if (extras.getString("message") != null && extras.getString("message").length() != 0) {
           createNotification(context, extras);
@@ -142,12 +142,12 @@ public class GCMIntentService extends GCMBaseIntentService {
       mBuilder.setNumber(Integer.parseInt(msgcnt));
     }
 
-		String soundName = extras.getString("sound");
-		if (soundName != null) {
-			Resources r = getResources();
-			int resourceId = r.getIdentifier(soundName, "raw", context.getPackageName());
-			Uri soundUri = Uri.parse("android.resource://" + context.getPackageName() + "/" + resourceId);
-			mBuilder.setSound(soundUri);
+    String soundName = extras.getString("sound");
+    if (soundName != null) {
+      Resources r = getResources();
+      int resourceId = r.getIdentifier(soundName, "raw", context.getPackageName());
+      Uri soundUri = Uri.parse("android.resource://" + context.getPackageName() + "/" + resourceId);
+      mBuilder.setSound(soundUri);
       defaults &= ~Notification.DEFAULT_SOUND;
       mBuilder.setDefaults(defaults);
     }
