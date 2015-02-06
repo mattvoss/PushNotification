@@ -66,16 +66,19 @@ public class GCMIntentService extends GCMBaseIntentService {
     // Extract the payload from the message
     Bundle extras = intent.getExtras();
     if (extras != null) {
-      // if we are in the foreground, just surface the payload, else post it to the statusbar
+      // if we are in the foreground or background, just surface the payload, else post it to the statusbar
       if (PushPlugin.isInForeground()) {
         extras.putBoolean("foreground", true);
         PushPlugin.sendExtras(extras);
       } else {
         extras.putBoolean("foreground", false);
-        PushPlugin.sendExtras(extras);
-        // Send a notification if there is a message
-        if (extras.getString("message") != null && extras.getString("message").length() != 0) {
-          createNotification(context, extras);
+        if (PushPlugin.isActive()) {
+          PushPlugin.sendExtras(extras);
+        } else {
+          // Send a notification if there is a message and app not active
+          if (extras.getString("message") != null && extras.getString("message").length() != 0) {
+            createNotification(context, extras);
+          }
         }
       }
     }
