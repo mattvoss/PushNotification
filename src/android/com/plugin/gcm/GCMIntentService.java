@@ -63,6 +63,9 @@ public class GCMIntentService extends GCMBaseIntentService {
   protected void onMessage(Context context, Intent intent) {
     Log.d(TAG, "onMessage - context: " + context);
 
+    String lastNotification = PushPlugin.getPreference("lastNotification");
+    Log.e(TAG, "Last Notification:" + lastNotification);
+
     // Extract the payload from the message
     Bundle extras = intent.getExtras();
     if (extras != null) {
