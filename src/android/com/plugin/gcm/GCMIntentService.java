@@ -1,6 +1,10 @@
 package com.plugin.gcm;
 
 import java.util.Random;
+import java.text.DateFormat;
+import java.util.Date;
+import java.text.SimpleDateFormat;
+import java.util.TimeZone;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -16,6 +20,9 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
+import android.preference.PreferenceManager;
 
 import com.google.android.gcm.GCMBaseIntentService;
 
@@ -62,9 +69,36 @@ public class GCMIntentService extends GCMBaseIntentService {
   @Override
   protected void onMessage(Context context, Intent intent) {
     Log.d(TAG, "onMessage - context: " + context);
+    boolean notify = true;
+    double minutes = 0.0;
 
-    String lastNotification = PushPlugin.getPreference("lastNotification");
-    Log.e(TAG, "Last Notification:" + lastNotification);
+    String lastNotification = PreferenceManager.getDefaultSharedPreferences(
+      getApplicationContext()).getString("lastNotification", "");
+    int notificationInterval = PreferenceManager.getDefaultSharedPreferences(
+      getApplicationContext()).getInt("notificationInterval", 30);
+    Log.v(TAG, "Last Notification: " + lastNotification);
+    Log.v(TAG, "Notification Interval: " + notificationInterval);
+
+    if (lastNotification != null && !lastNotification.isEmpty()) {
+      try {
+        SimpleDateFormat dateParser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+        Date last = dateParser.parse(lastNotification);
+        SimpleDateFormat dateFormatUtc = new SimpleDateFormat("yyyy-MMM-dd HH:mm:ss");
+        dateFormatUtc.setTimeZone(TimeZone.getTimeZone("UTC"));
+        SimpleDateFormat dateFormatLocal = new SimpleDateFormat("yyyy-MMM-dd HH:mm:ss");
+        Date current = dateFormatLocal.parse( dateFormatUtc.format(new Date()) );
+        long diffInMs = (current.getTime() - last.getTime());
+        minutes = ((diffInMs / 1000) / 60);
+        String s = String.valueOf(diffInMs);
+        if (minutes < notificationInterval) {
+          notify = false;
+        }
+        Log.v(TAG, "Differential: " + s);
+      }
+      catch (Exception e) {
+        Log.e(TAG, "Exception " + e.getMessage());
+      }
+    }
 
     // Extract the payload from the message
     Bundle extras = intent.getExtras();
@@ -79,7 +113,7 @@ public class GCMIntentService extends GCMBaseIntentService {
           PushPlugin.sendExtras(extras);
         } else {
           // Send a notification if there is a message and app not active
-          if (extras.getString("message") != null && extras.getString("message").length() != 0) {
+          if (extras.getString("message") != null && extras.getString("message").length() != 0 && notify) {
             createNotification(context, extras);
           }
         }

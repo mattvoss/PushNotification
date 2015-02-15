@@ -9,9 +9,6 @@ import org.apache.cordova.*;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import android.content.SharedPreferences;
-import android.content.SharedPreferences.Editor;
-import android.preference.PreferenceManager;
 
 import java.util.Iterator;
 
@@ -148,7 +145,7 @@ public class PushPlugin extends CordovaPlugin {
       }
     }
   }
-
+hungarian
   @Override
   public void initialize(CordovaInterface cordova, CordovaWebView webView) {
     super.initialize(cordova, webView);
@@ -269,40 +266,5 @@ public class PushPlugin extends CordovaPlugin {
   public static boolean isActive()
   {
     return gWebView != null;
-  }
-
-  public static String getPreference(final String key)
-  {
-    cordova.getThreadPool().execute(
-      new Runnable() {
-        public void run() {
-          SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(cordova.getActivity());
-          String returnVal = null;
-          if (sharedPrefs.contains(key)) {
-            Object obj = sharedPrefs.getAll().get(key);
-            String objClass = obj.getClass().getName();
-            if (objClass.equals("java.lang.Integer")) {
-              returnVal = obj.toString();
-            } else if (objClass.equals("java.lang.Float") || objClass.equals("java.lang.Double")) {
-              returnVal = obj.toString();
-            } else if (objClass.equals("java.lang.Boolean")) {
-              returnVal = (Boolean)obj ? "true" : "false";
-            } else if (objClass.equals("java.lang.String")) {
-              if (sharedPrefs.contains("_" + key + "_type")) {
-                // here we have json encoded string
-                returnVal = (String)obj;
-              } else {
-                returnVal = obj;
-              }
-            } else {
-              Log.e(TAG, "unhandled type: " + objClass);
-            }
-            return returnVal;
-          } else {
-            return "";
-          }
-        };
-      };
-    );
   }
 }
