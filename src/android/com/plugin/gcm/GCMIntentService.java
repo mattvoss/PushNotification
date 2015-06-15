@@ -6,6 +6,7 @@ import java.util.Date;
 import java.text.SimpleDateFormat;
 import java.util.TimeZone;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -69,62 +70,54 @@ public class GCMIntentService extends GCMBaseIntentService {
   @Override
   protected void onMessage(Context context, Intent intent) {
     Log.d(TAG, "onMessage - context: " + context);
-    boolean notify = true;
-    double minutes = 0.0;
-
-    String lastNotification = PreferenceManager.getDefaultSharedPreferences(
-      getApplicationContext()).getString("lastNotification", "");
-    int notificationInterval = PreferenceManager.getDefaultSharedPreferences(
-      getApplicationContext()).getInt("notificationInterval", 30);
-    Log.v(TAG, "Last Notification: " + lastNotification);
-    Log.v(TAG, "Notification Interval: " + notificationInterval);
-
-    if (lastNotification != null && !lastNotification.isEmpty()) {
+    
+    try {
+      
+      // Extract the payload from the message
+      Bundle extras = intent.getExtras();
+      JSONObject msg = null;
       try {
-        SimpleDateFormat dateParser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-        Date last = dateParser.parse(lastNotification);
-        SimpleDateFormat dateFormatUtc = new SimpleDateFormat("yyyy-MMM-dd HH:mm:ss");
-        dateFormatUtc.setTimeZone(TimeZone.getTimeZone("UTC"));
-        SimpleDateFormat dateFormatLocal = new SimpleDateFormat("yyyy-MMM-dd HH:mm:ss");
-        Date current = dateFormatLocal.parse( dateFormatUtc.format(new Date()) );
-        long diffInMs = (current.getTime() - last.getTime());
-        minutes = ((diffInMs / 1000) / 60);
-        String s = String.valueOf(diffInMs);
-        if (minutes < notificationInterval) {
-          notify = false;
-        }
-        Log.v(TAG, "Differential: " + s);
+        msg = new JSONObject(extras.getString("extra"));
+        //Log.v(TAG, "payload: " + msg.toString());
       }
-      catch (Exception e) {
-        Log.e(TAG, "Exception " + e.getMessage());
+      catch(JSONException e) {
+        Log.e(TAG, "Error extracting extra payload: " + e.getMessage());
       }
-    }
-
-    // Extract the payload from the message
-    Bundle extras = intent.getExtras();
-    if (extras != null) {
-      // if we are in the foreground or background, just surface the payload, else post it to the statusbar
-      if (PushPlugin.isInForeground()) {
-        extras.putBoolean("foreground", true);
-        PushPlugin.sendExtras(extras);
-      } else {
-        extras.putBoolean("foreground", false);
-        if (PushPlugin.isActive()) {
+      
+      if (extras != null) {
+        // if we are in the foreground or background, just surface the payload, else post it to the statusbar
+        if (PushPlugin.isInForeground()) {
+          extras.putBoolean("foreground", true);
           PushPlugin.sendExtras(extras);
         } else {
-          // Send a notification if there is a message and app not active
-          if (extras.getString("message") != null && extras.getString("message").length() != 0 && notify) {
-            createNotification(context, extras);
+          extras.putBoolean("foreground", false);
+          if (PushPlugin.isActive()) {
+            PushPlugin.sendExtras(extras);
+          } else {
+            Boolean foundSeats = msg.getBoolean("foundSeats");
+            if (foundSeats) {
+              createNotification(context, extras);
+            }
           }
         }
       }
     }
+    catch (Exception e) {
+      Log.e(TAG, "JSON Exception " + e.getMessage());
+    }
   }
+
 
   public void createNotification(Context context, Bundle extras)
   {
     int notId = 0;
-
+    JSONObject msg = null;
+    try {
+      msg = new JSONObject(extras.getString("extra"));
+    }
+    catch(JSONException e) {
+      Log.e(TAG, "Error extracting extra payload: " + e.getMessage());
+    }
     try {
       notId = Integer.parseInt(extras.getString("notId", "0"));
     }
@@ -134,6 +127,7 @@ public class GCMIntentService extends GCMBaseIntentService {
     catch(Exception e) {
       Log.e(TAG, "Number format exception - Error parsing Notification ID" + e.getMessage());
     }
+    /*
     if (notId == 0) {
       // no notId passed, so assume we want to show all notifications, so make it a random number
       notId = new Random().nextInt(100000);
@@ -141,7 +135,7 @@ public class GCMIntentService extends GCMBaseIntentService {
     } else {
       Log.d(TAG, "Received notId: " + notId);
     }
-
+    */
 
     NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
     String appName = getAppName(this);
@@ -165,18 +159,31 @@ public class GCMIntentService extends GCMBaseIntentService {
             .setDefaults(defaults)
             .setSmallIcon(context.getApplicationInfo().icon)
             .setWhen(System.currentTimeMillis())
-            .setContentTitle(extras.getString("title"))
-            .setTicker(extras.getString("title"))
+            .setContentTitle("Scout reporting")
+            .setTicker("Scout reporting")
             .setContentIntent(contentIntent)
             .setAutoCancel(true);
-
-    String message = extras.getString("message");
-    if (message != null) {
-      mBuilder.setContentText(message);
-    } else {
-      mBuilder.setContentText("<missing message content>");
+    
+    String message = null;
+    try {
+      if (msg != null) {
+        message = msg.getString("restaurant") + ": " + msg.getString("message");
+      }
     }
-
+    catch(JSONException e) {
+      Log.e(TAG, "Error extracting extra payload: " + e.getMessage());
+    }
+    
+    try {
+      if (message != null) {
+        mBuilder.setContentText(message);
+      } else {
+        mBuilder.setContentText("<missing message content>");
+      }
+    }
+    catch(Exception e) {
+      Log.e(TAG, "Message Exception: " + e.getMessage());
+    }
     String msgcnt = extras.getString("msgcnt");
     if (msgcnt != null) {
       mBuilder.setNumber(Integer.parseInt(msgcnt));

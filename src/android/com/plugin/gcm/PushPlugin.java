@@ -63,12 +63,12 @@ public class PushPlugin extends CordovaPlugin {
         // remember this callback instance because we need it when GCMRegistrar.register returns
         rememberedAsyncCallback = callbackContext;
 
-        final String regId = GCMRegistrar.getRegistrationId(getApplicationContext());
-        if (regId.equals("")) {
+        //final String regId = GCMRegistrar.getRegistrationId(getApplicationContext());
+        //if (regId.equals("")) {
           GCMRegistrar.register(getApplicationContext(), gSenderID);
-        } else {
-          Log.e(TAG, "execute: GCM regId exists - " + regId);
-        }
+        //} else {
+        //  Log.e(TAG, "execute: GCM regId exists - " + regId);
+        //}
 
         result = true;
         PluginResult pluginResult = new PluginResult(PluginResult.Status.NO_RESULT);
@@ -145,7 +145,7 @@ public class PushPlugin extends CordovaPlugin {
       }
     }
   }
-hungarian
+
   @Override
   public void initialize(CordovaInterface cordova, CordovaWebView webView) {
     super.initialize(cordova, webView);
