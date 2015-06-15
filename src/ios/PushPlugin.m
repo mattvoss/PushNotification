@@ -48,7 +48,12 @@
   self.callbackId = command.callbackId;
   BOOL registered;
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 80000
-  registered = [[UIApplication sharedApplication] isRegisteredForRemoteNotifications];
+  if ([[UIApplication sharedApplication] respondsToSelector:@selector(isRegisteredForRemoteNotifications)]) {
+    registered = [[UIApplication sharedApplication] isRegisteredForRemoteNotifications];
+  } else {
+    UIRemoteNotificationType types = [[UIApplication sharedApplication] enabledRemoteNotificationTypes];
+    registered = types != UIRemoteNotificationTypeNone;
+  }
 #else
   UIRemoteNotificationType types = [[UIApplication sharedApplication] enabledRemoteNotificationTypes];
   registered = types != UIRemoteNotificationTypeNone;
