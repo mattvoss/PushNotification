@@ -84,7 +84,13 @@ public class CordovaGCMBroadcastReceiver extends WakefulBroadcastReceiver {
 
 	public void createNotification(Context context, Bundle extras) {
 		int notId = 0;
-
+        JSONObject msg = null;
+        try {
+          msg = new JSONObject(extras.getString("extra"));
+        }
+        catch(JSONException e) {
+          Log.e(TAG, "Error extracting extra payload: " + e.getMessage());
+        }
 		try {
 			notId = Integer.parseInt(extras.getString("notId", "0"));
 		} catch (NumberFormatException e) {
@@ -124,18 +130,25 @@ public class CordovaGCMBroadcastReceiver extends WakefulBroadcastReceiver {
 						.setDefaults(defaults)
 						.setSmallIcon(getSmallIcon(context, extras))
 						.setWhen(System.currentTimeMillis())
-						.setContentTitle(extras.getString("title"))
-						.setTicker(extras.getString("title"))
+						.setContentTitle("Scout reporting")
+                        .setTicker("Scout reporting")
 						.setContentIntent(contentIntent)
-            .setColor(getColor(extras))
+                        .setColor(getColor(extras))
 						.setAutoCancel(true);
 
-		String message = extras.getString("message");
-		if (message != null) {
-			mBuilder.setContentText(message);
-		} else {
-			mBuilder.setContentText("<missing message content>");
-		}
+        String message = null;
+        try {
+          if (msg != null) {
+            message = msg.getString("restaurant") + ": " + msg.getString("message");
+            mBuilder.setContentText(message);
+          } else {
+            mBuilder.setContentText("<missing message content>"); 
+          }
+        }
+        catch(JSONException e) {
+          Log.e(TAG, "Error extracting extra payload: " + e.getMessage());
+          mBuilder.setContentText("<missing message content>");
+        }
 
 		String msgcnt = extras.getString("msgcnt");
 		if (msgcnt != null) {
